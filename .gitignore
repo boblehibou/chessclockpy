@@ -5,4 +5,8 @@ venv/
 *.pyc
 *.pyo
 
+*.spec
+build/
+dist/
+
 *.zip

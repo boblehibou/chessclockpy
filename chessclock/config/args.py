@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 
-from chessclock.config import Side
-from chessclock.config.conf import Config
+from .side import Side
+from .conf import Config
 
 HR: int = 3600
 MN: int = 60
@@ -83,6 +83,12 @@ def parse_args() -> Config:
 		'A time limit for both of the two half-moves may be set.',
 	)
 
+	parser.add_argument(
+		'-f', '--font',
+		default='monospace',
+		help='the system font to use to display the time',
+	)
+
 	args = parser.parse_args()
 	return Config(
 		time_seconds=parse_time(args.time, incr=False),
@@ -93,4 +99,5 @@ def parse_args() -> Config:
 		increment_r=parse_time(args.increment_r, incr=True),
 		delayed_start=parse_time(args.delayed_start, incr=True),
 		starting_side=parse_side(args.starting_side),
+		font=args.font,
 	)

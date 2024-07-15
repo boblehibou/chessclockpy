@@ -1,6 +1,4 @@
-import sys
-
-from chessclock.config import Side
+from .side import Side
 
 
 class Config:
@@ -17,6 +15,7 @@ class Config:
 			increment_r: int = 0,
 			delayed_start: int = 0,
 			starting_side: Side = Side.L,
+			font: str = 'monospace',
 	):
 		"""
 		:param time_seconds: time for both players, in seconds
@@ -37,6 +36,8 @@ class Config:
 		self.increment_r: int = increment_r
 		self.delayed_start: int = delayed_start
 		self.starting_side: Side = starting_side
+		assert isinstance(font, str)
+		self.font = font.strip()
 		# type
 		if not (isinstance(self.starting_side, Side) and self.starting_side in Side) or not all([
 			isinstance(x, int) for x in [
