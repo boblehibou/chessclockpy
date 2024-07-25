@@ -1,7 +1,14 @@
+# SPDX-FileCopyrightText: 2024 Boris Stefanovic <owldev@bluewin.ch>
+#
+# SPDX-License-Identifier: GPL-3.0-only
+
+PROJNAME := chessclockpy
 NAME := chessclock
 
 MAIN := launch.py
 MAKEFILE := Makefile
+LICENCE := LICENCE.txt
+NOTICE := NOTICE.txt
 
 PYTHON ?= python
 VENV := venv
@@ -9,9 +16,9 @@ REQS := requirements.txt
 
 OUT := out
 
-ZIP_DIR_NAME := ${NAME}_src
+ZIP_DIR_NAME := ${PROJNAME}
 ZIP_DIR_PATH := ${OUT}/${ZIP_DIR_NAME}
-ZIP_FILE := ${NAME}.zip
+ZIP_FILE := ${PROJNAME}.zip
 ZIP_PATH := ${OUT}/${ZIP_FILE}
 
 BIN_ROOT := ${OUT}/inst
@@ -31,7 +38,7 @@ run: ${VENV}
 package: ${OUT}
 	rm -rf ${ZIP_DIR_PATH} ${ZIP_PATH}
 	mkdir -p ${ZIP_DIR_PATH}
-	cp -r chessclock ${MAIN} ${REQS} ${MAKEFILE} ${ZIP_DIR_PATH}/
+	cp -r chessclock ${MAIN} ${REQS} ${MAKEFILE} ${LICENCE} ${NOTICE} ${ZIP_DIR_PATH}/
 	cd ${OUT} && \
 		zip -r ${ZIP_FILE} ${ZIP_DIR_NAME}
 
@@ -52,6 +59,9 @@ bin: ${OUT} ${VENV}
 			launch.py && \
 		deactivate
 
+run-bin: bin
+	./out/${NAME}
+
 clean:
 	-find chessclock -type d -name "__pycache__" -exec rm -rf {} \;
 	rm -rf ${OUT} build dist *.spec
@@ -70,4 +80,4 @@ ${OUT}:
 
 
 
-.PHONY: all bin clean package run
+.PHONY: all bin clean package run run-bin

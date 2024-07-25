@@ -2,16 +2,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-only
 
-.idea/
-.venv/
-venv/
-**/__pycache__/
-*.pyc
-*.pyo
-
-*.spec
-build/
-dist/
-
-out/
-*.zip
+from .constants import *
+from .format import *
+from .side import Side

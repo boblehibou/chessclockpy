@@ -2,16 +2,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-only
 
-.idea/
-.venv/
-venv/
-**/__pycache__/
-*.pyc
-*.pyo
+"""
+Import all themes that should be automatically registered here.
+"""
 
-*.spec
-build/
-dist/
-
-out/
-*.zip
+from .neon import Neon

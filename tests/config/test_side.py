@@ -1,4 +1,8 @@
-from chessclock.core.side import Side
+# SPDX-FileCopyrightText: 2024 Boris Stefanovic <owldev@bluewin.ch>
+#
+# SPDX-License-Identifier: GPL-3.0-only
+
+from chessclock.common.side import Side
 
 
 def test_side_opposite():

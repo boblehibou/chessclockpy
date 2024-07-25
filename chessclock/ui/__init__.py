@@ -1,31 +1,63 @@
-from typing import Callable
+# SPDX-FileCopyrightText: 2024 Boris Stefanovic <owldev@bluewin.ch>
+#
+# SPDX-License-Identifier: GPL-3.0-only
 
 import pyglet
 
-from chessclock.config import Config, parse_args
-from chessclock.core import Core, dict_times_to_text, Side, time_control_to_text, SECOND
-from chessclock.config.keymap import Action, Keymap
-from chessclock.config.themes import Theme
+from chessclock.config.keymap import Keymap
+from chessclock.themes import Theme, get_theme
+from chessclock.core import Side
+from .interface import Interface
 
 
 class UI(pyglet.window.Window):
+	"""
+	The user interface for the chess clock.
+	"""
+
 	@staticmethod
 	def screen_size():
 		"""
-		Get the screen size, in pixels.
+		Get the size of the screen, in pixels.
 		:return: a tuple describing the size of the screen, in pixels, in format (width,height)
 		"""
 		display = pyglet.canvas.Display()
 		screen = display.get_default_screen()
 		return screen.width, screen.height
 
-	def __init__(self, *, key_bindings: Keymap | None = None, theme: Theme | None = None):
+	def __init__(
+			self,
+			interface_instance: Interface,
+			key_bindings: Keymap | None = None,
+			theme: Theme | None = None,
+	):
+		"""
+		UI constructor.
+		:param interface_instance: an Interface instance
+		:param key_bindings: a complete Keymap instance
+		:param theme: a Theme instance
+		"""
 		super().__init__()
-		# logic
-		self.cfg: Config = parse_args()
-		self.core: Core = Core(self.cfg)
+		# interface
+		if not isinstance(interface_instance, Interface):
+			raise TypeError
+		self.interface: Interface = interface_instance
+		# keymap
+		if key_bindings is None:
+			key_bindings = Keymap()
+		if not isinstance(key_bindings, Keymap):
+			raise TypeError
+		self.keymap = key_bindings
 		# theme
-		self.theme = theme if isinstance(theme, Theme) else Theme()
+		if theme is None:
+			theme = self.interface.get_theme()
+		if theme is None:
+			theme = Theme()
+		if isinstance(theme, str):
+			theme = get_theme(theme)
+		if not isinstance(theme, Theme):
+			raise TypeError
+		self.theme = theme
 		# fullscreen
 		self.scrwid, self.scrhei = UI.screen_size()
 		self.width = self.scrwid
@@ -48,7 +80,7 @@ class UI(pyglet.window.Window):
 		self.times: dict[Side, pyglet.text.Label] = {
 			side: pyglet.text.Label(
 				text='00:00:00',
-				font_name=self.cfg.font,
+				font_name=self.theme.get_font(),
 				anchor_x='center',
 				anchor_y='baseline',
 				align='center',
@@ -57,37 +89,16 @@ class UI(pyglet.window.Window):
 		}
 		self.description: dict[Side, pyglet.text.Label] = {
 			side: pyglet.text.Label(
-				text=time_control_to_text(
-					SECOND * {Side.L: self.cfg.time_l, Side.R: self.cfg.time_r}[side],
-					SECOND * {Side.L: self.cfg.increment_l, Side.R: self.cfg.increment_r}[side],
+				text=self.theme.format_time_control(
+					self.interface.get_base_time_ns()[side],
+					self.interface.get_increment_ns()[side],
 				),
-				font_name=self.cfg.font,
+				font_name=self.theme.get_font(),
 				anchor_x='center',
 				anchor_y='baseline',
 				align='center',
 				batch=self.meta,
 			) for side in Side
-		}
-		# controls
-		self.keymap: Keymap = key_bindings if key_bindings else Keymap()
-		if not self.keymap.complete:
-			raise KeyError
-
-		def play_pause():
-			self.core.run = not self.core.run
-
-		def swap_sides():
-			if self.core.swap_sides():
-				self.cfg.swap_sides()
-
-		self.action_map: dict[Action, Callable] = {
-			Action.PRESS_L: lambda: self.core.press(Side.L),
-			Action.PRESS_R: lambda: self.core.press(Side.R),
-			Action.ADDTIME_L: lambda: self.core.add_time(Side.L),
-			Action.ADDTIME_R: lambda: self.core.add_time(Side.R),
-			Action.PLAY_PAUSE: play_pause,
-			Action.SWAP_SIDES: swap_sides,
-			Action.RESET: lambda: self.core.reset(),
 		}
 
 	def run(self, interval: float = 1 / 30) -> None:
@@ -96,7 +107,7 @@ class UI(pyglet.window.Window):
 		:param interval: the update interval / "framerate"
 		:return: None
 		"""
-		self.core.reset()
+		self.interface.reset()
 		pyglet.app.run(interval=interval)
 
 	def on_resize(self, w, h):
@@ -112,28 +123,30 @@ class UI(pyglet.window.Window):
 			self.description[side].font_size = h // 30
 
 	def on_draw(self):
-		times = self.core.times
-		texts = dict_times_to_text(times)
+		times = self.interface.get_current_times_ns()
+		texts = {s: self.theme.format_time(t) for s, t in times.items()}
+		is_running = self.interface.is_running()
 		self.clear()
-		running = self.core.run
 		for side in Side:
-			current = side == self.core.side
+			is_current = side == self.interface.get_current_side()
 			t = times[side]
 			self.times[side].text = texts[side]
-			self.times[side].color = self.theme.get_text_color(current=current, running=running, time=t)
-			self.areas[side].color = self.theme.get_back_color(current=current, running=running, time=t)
+			self.times[side].color = self.theme.get_text_color(is_current=is_current, is_running=is_running, time_left_ns=t)
+			self.areas[side].color = self.theme.get_back_color(is_current=is_current, is_running=is_running, time_left_ns=t)
 		self.back.draw()
 		self.fore.draw()
-		if not self.core.run:
+		if not is_running:
+			base, incr = self.interface.get_base_time_ns(), self.interface.get_increment_ns()
 			for side in Side:
-				self.description[side].text = time_control_to_text(
-					SECOND * {Side.L: self.cfg.time_l, Side.R: self.cfg.time_r}[side],
-					SECOND * {Side.L: self.cfg.increment_l, Side.R: self.cfg.increment_r}[side],
+				self.description[side].text = self.theme.format_time_control(base[side], incr[side])
+				self.description[side].color = self.theme.get_meta_color(
+					is_current=(side == self.interface.get_current_side()),
+					is_running=is_running,
+					time_left_ns=times[side],
 				)
 			self.meta.draw()
 
 	def on_key_press(self, symbol, modifiers):
 		super().on_key_press(symbol, modifiers)
-		action = self.keymap.bindings.get(symbol, None)
-		callback = self.action_map.get(action, lambda: None)
-		callback()
+		action = self.keymap.get(symbol)
+		self.interface.action_map.get(action, lambda: None)()

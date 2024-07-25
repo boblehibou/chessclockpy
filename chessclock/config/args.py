@@ -1,6 +1,11 @@
+# SPDX-FileCopyrightText: 2024 Boris Stefanovic <owldev@bluewin.ch>
+#
+# SPDX-License-Identifier: GPL-3.0-only
+
 from argparse import ArgumentParser
 
 from .conf import Config
+from chessclock.themes import list_themes
 
 
 def parse_time(s: str, incr: bool = False, multiplier: int = 1) -> int:
@@ -33,11 +38,17 @@ def parse_time(s: str, incr: bool = False, multiplier: int = 1) -> int:
 
 
 def parse_args() -> Config:
+	"""
+	Parse command line arguments into a Config object.
+	Also implements the command line help command (option "-h").
+	:return: a Config instance, built from the command line arguments
+	"""
 	parser = ArgumentParser(
 		prog='chessclock',
 		description='simple chess clock configured on the command line',
 	)
 
+	# TIME
 	parser.add_argument(
 		'-t', '--time',
 		default='00:10:00',
@@ -46,6 +57,7 @@ def parse_args() -> Config:
 	parser.add_argument('-l', '--time-l', default='', help='time for clock on the left, defaults to --time')
 	parser.add_argument('-r', '--time-r', default='', help='time for clock on the right, defaults to --time')
 
+	# INCREMENT
 	parser.add_argument(
 		'-T', '--increment',
 		default='00:00:00',
@@ -54,10 +66,20 @@ def parse_args() -> Config:
 	parser.add_argument('-L', '--increment-l', default='', help='time for clock on the left, defaults to --increment')
 	parser.add_argument('-R', '--increment-r', default='', help='time for clock on the right, defaults to --increment')
 
+	# FONT
 	parser.add_argument(
 		'-f', '--font',
 		default='monospace',
 		help='the system font to use to display the time',
+	)
+
+	# THEME
+	parser.add_argument(
+		'-s', '--theme',
+		type=str,
+		default='default',
+		choices=list_themes(),
+		help='name of the color theme to use',
 	)
 
 	args = parser.parse_args()
@@ -69,4 +91,5 @@ def parse_args() -> Config:
 		increment_l=parse_time(args.increment_l, incr=True),
 		increment_r=parse_time(args.increment_r, incr=True),
 		font=args.font,
+		theme_name=args.theme,
 	)
