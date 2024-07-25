@@ -3,7 +3,7 @@ NAME := chessclock
 MAIN := launch.py
 MAKEFILE := Makefile
 
-PYTHON := python
+PYTHON ?= python
 VENV := venv
 REQS := requirements.txt
 

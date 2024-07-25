@@ -1,11 +1,6 @@
 from argparse import ArgumentParser
 
-from .side import Side
 from .conf import Config
-
-HR: int = 3600
-MN: int = 60
-SC: int = 1
 
 
 def parse_time(s: str, incr: bool = False, multiplier: int = 1) -> int:
@@ -20,42 +15,33 @@ def parse_time(s: str, incr: bool = False, multiplier: int = 1) -> int:
 		raise TypeError
 	if not s:
 		return 0
+	hr: int = 3600
+	mn: int = 60
+	sc: int = 1
 	a = [int(v) for v in s.split(':')]
 	t = 0
 	match len(a):
 		case 3:
-			t = HR * a[0] + MN * a[1] + SC * a[2]
+			t = hr * a[0] + mn * a[1] + sc * a[2]
 		case 2:
-			t = MN * a[0] + SC * a[1]
+			t = mn * a[0] + sc * a[1]
 		case 1:
-			t = SC * a[0] if incr else MN * a[0]
+			t = sc * a[0] if incr else mn * a[0]
 		case _:
 			raise ValueError
 	return multiplier * t
 
 
-def parse_side(side: str) -> Side:
-	if not isinstance(side, str):
-		raise TypeError
-	side = side.lower()
-	if side in {'l', 'left'}:
-		return Side.L
-	elif side in {'r', 'right'}:
-		return Side.R
-	else:
-		raise ValueError
-
-
 def parse_args() -> Config:
 	parser = ArgumentParser(
 		prog='chessclock',
-		description='a simple command-line-configured easy to use (hopefully) chess clock',
+		description='simple chess clock configured on the command line',
 	)
 
 	parser.add_argument(
 		'-t', '--time',
 		default='00:10:00',
-		help='time for both players, in following format :  "[HH:]MM:SS" or "MM"',
+		help='time for both players; format :  "[HH:]MM:SS" or "MM"',
 	)
 	parser.add_argument('-l', '--time-l', default='', help='time for clock on the left, defaults to --time')
 	parser.add_argument('-r', '--time-r', default='', help='time for clock on the right, defaults to --time')
@@ -63,25 +49,10 @@ def parse_args() -> Config:
 	parser.add_argument(
 		'-T', '--increment',
 		default='00:00:00',
-		help='increment for both players, in following format :  "[[HH:]MM:]SS"',
+		help='increment for both players; format :  "[[HH:]MM:]SS"',
 	)
 	parser.add_argument('-L', '--increment-l', default='', help='time for clock on the left, defaults to --increment')
 	parser.add_argument('-R', '--increment-r', default='', help='time for clock on the right, defaults to --increment')
-
-	parser.add_argument(
-		'-s', '--starting-side',
-		default='L',
-		choices={'L', 'R', 'l', 'r', 'LEFT', 'RIGHT', 'left', 'right', 'Left', 'Right'},
-		help='the physical location of white (starting) player, relative to the keyboard, or which clock starts counting down first',
-	)
-
-	parser.add_argument(
-		'-d', '--delayed-start',
-		default='',
-		help=
-		'Do NOT start the clock immediately but let each player play one move before clocks actually start.'
-		'A time limit for both of the two half-moves may be set.',
-	)
 
 	parser.add_argument(
 		'-f', '--font',
@@ -97,7 +68,5 @@ def parse_args() -> Config:
 		increment_seconds=parse_time(args.increment, incr=True),
 		increment_l=parse_time(args.increment_l, incr=True),
 		increment_r=parse_time(args.increment_r, incr=True),
-		delayed_start=parse_time(args.delayed_start, incr=True),
-		starting_side=parse_side(args.starting_side),
 		font=args.font,
 	)

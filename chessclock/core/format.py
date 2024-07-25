@@ -1,5 +1,5 @@
 from .constants import *
-from ..config import Side
+from .side import Side
 
 
 def time_parts(ns: int):

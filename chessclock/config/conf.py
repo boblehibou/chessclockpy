@@ -1,21 +1,20 @@
-from .side import Side
+from .keymap import Keymap
+from .themes import Theme, get_theme
 
 
 class Config:
-	NO_DELAY: int = 0
-	INFINITE_DELAY: int = -1
-
 	def __init__(
 			self,
+			*,
 			time_seconds: int = 600,  # 10 minutes
 			time_l: int = 0,
 			time_r: int = 0,
 			increment_seconds: int = 0,
 			increment_l: int = 0,
 			increment_r: int = 0,
-			delayed_start: int = 0,
-			starting_side: Side = Side.L,
 			font: str = 'monospace',
+			theme: Theme | str | None = None,
+			keymap: Keymap | None = None,
 	):
 		"""
 		:param time_seconds: time for both players, in seconds
@@ -24,46 +23,46 @@ class Config:
 		:param increment_seconds: increment for both players, in seconds
 		:param increment_l: increment for the player on the left, in seconds; overwrites increment_s
 		:param increment_r: increment for the player on the right, in seconds; overwrites increment_s
-		:param delayed_start: time in seconds for first move, without clock countdown (like chess.com); 0 => no_delay , -1 => infinite
-		:param starting_side: side on which the clock first starts counting down
 		"""
+		# params
+		if not isinstance(font, str) or not all(map(lambda x: isinstance(x, int), {
+			time_seconds, time_l, time_r, increment_seconds, increment_l, increment_r,
+		})):
+			raise TypeError
+		time_seconds = 600 if time_seconds <= 0 else time_seconds
+		time_l = time_seconds if time_l <= 0 else time_l
+		time_r = time_seconds if time_r <= 0 else time_r
+		increment_seconds = 0 if increment_seconds < 0 else increment_seconds
+		increment_l = increment_seconds if increment_l < 0 else increment_l
+		increment_r = increment_seconds if increment_r < 0 else increment_r
+		# themes
+		if theme is None:
+			theme = Theme()
+		elif isinstance(theme, str):
+			theme = get_theme(theme.strip())
+		elif not isinstance(theme, Theme):
+			raise TypeError
+		# keymap
+		if not keymap:
+			keymap = Keymap()
+		if not isinstance(keymap, Keymap):
+			raise TypeError
+		if not keymap.complete:
+			print('\nWARNING :\nThe keymap being used is incomplete !\nSome features may be disabled.\n')
 		# assign
-		self.time_seconds: int = time_seconds
 		self.time_l: int = time_l
 		self.time_r: int = time_r
-		self.increment_seconds: int = increment_seconds
 		self.increment_l: int = increment_l
 		self.increment_r: int = increment_r
-		self.delayed_start: int = delayed_start
-		self.starting_side: Side = starting_side
-		assert isinstance(font, str)
 		self.font = font.strip()
-		# type
-		if not (isinstance(self.starting_side, Side) and self.starting_side in Side) or not all([
-			isinstance(x, int) for x in [
-				self.time_seconds, self.time_l, self.time_r,
-				self.increment_seconds, self.increment_l, self.increment_r,
-				self.delayed_start,
-			]
-		]):
-			raise TypeError
-		# value
-		if self.delayed_start < -1 or any([
-			x < 0 for x in [
-				self.time_seconds, self.time_l, self.time_r,
-				self.increment_seconds, self.increment_l, self.increment_r,
-			]
-		]):
-			raise ValueError
-		# time
-		if not self.time_l:
-			self.time_l = self.time_seconds
-		if not self.time_r:
-			self.time_r = self.time_seconds
-		if not (self.time_l > 0 and self.time_r > 0):
-			raise ValueError('time not set for at least one of the players')
-		# increment
-		if not self.increment_l:
-			self.increment_l = self.increment_seconds
-		if not self.increment_r:
-			self.increment_r = self.increment_seconds
+		self.theme = theme
+		self.keymap = keymap
+
+	def swap_sides(self) -> None:
+		"""
+		Physically mirrors the configuration.
+		This operation only makes sense if the two players have different time controls.
+		:return: None
+		"""
+		self.time_l, self.time_r = self.time_r, self.time_l
+		self.increment_l, self.increment_r = self.increment_r, self.increment_l

@@ -1,4 +1,4 @@
-from chessclock.config.side import Side, Color
+from chessclock.core.side import Side
 
 
 def test_side_opposite():
@@ -8,12 +8,3 @@ def test_side_opposite():
 			assert side.opposite == side.R
 		if side is Side.R:
 			assert side.opposite == side.L
-
-
-def test_color_opposite():
-	for color in Color:
-		assert color in {Color.WHITE, Color.BLACK}
-		if color is Color.WHITE:
-			assert color.opposite == color.BLACK
-		if color is Color.BLACK:
-			assert color.opposite == color.WHITE
